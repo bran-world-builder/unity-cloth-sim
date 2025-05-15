@@ -1,15 +1,32 @@
+using Unity.PlasticSCM.Editor.WebApi;
 using UnityEngine;
 
 public class Particle : MonoBehaviour
 {
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
+    [SerializeField] Vector3 currentPosition;
+    [SerializeField] Vector3 previousPosition;
+    [SerializeField] Vector3 acceleration;
+    [SerializeField] bool isPinned;
+
+    private Vector3 velocity;
+    private Vector3 newPosition;
+
+
+    public void Initialize(Vector3 startPosition)
     {
-        
+        currentPosition = startPosition;
+        previousPosition = startPosition;
     }
 
-    // Update is called once per frame
-    void Update()
+    public void UpdatePosition()
+    {
+        velocity = currentPosition - previousPosition;
+        newPosition = currentPosition + velocity + acceleration * Time.deltaTime * Time.deltaTime;
+        previousPosition = currentPosition;
+        currentPosition = newPosition;
+    }
+
+    public void GetVerlet()
     {
         
     }
