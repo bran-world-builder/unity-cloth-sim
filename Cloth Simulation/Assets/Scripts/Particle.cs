@@ -3,10 +3,11 @@ using UnityEngine;
 
 public class Particle : MonoBehaviour
 {
-    [SerializeField] Vector3 currentPosition;
-    [SerializeField] Vector3 previousPosition;
     [SerializeField] Vector3 acceleration;
-    [SerializeField] bool isPinned;
+    
+    public Vector3 currentPosition;
+    public Vector3 previousPosition;
+    public bool isPinned;
 
     private Vector3 velocity;
     private Vector3 newPosition;
@@ -24,10 +25,5 @@ public class Particle : MonoBehaviour
         newPosition = currentPosition + velocity + acceleration * Time.deltaTime * Time.deltaTime;
         previousPosition = currentPosition;
         currentPosition = newPosition;
-    }
-
-    public void GetVerlet()
-    {
-        
     }
 }
