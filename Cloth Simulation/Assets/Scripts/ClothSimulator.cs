@@ -1,32 +1,48 @@
 using UnityEngine;
 using System.Collections.Generic;
 using UnityEngine.Rendering;
+using System.Runtime.CompilerServices;
 
 public class ClothSimulator : MonoBehaviour
 {
-    public int width = 10;
-    public int height = 10;
+    public static int width = 10;
+    public static int height = 10;
     public float spacing = 0.5f;
+    public Transform clothRootTransform;
     public GameObject particlePrefab;
 
-    private List<Particle> particles = new List<Particle>();
+    Particle[,] particleGrid;
     private List<Spring> structuralSprings = new List<Spring>();
 
     
     public void BuildCloth()
     {
+        particleGrid = new Particle[width, height];
         for (int i = 0; i < width; i++)
         {
             for (int j = 0; j < height; j++)
             {
                 Vector3 position = new Vector3(i * spacing, j * spacing, 0);
-                GameObject particleObject = Instantiate(particlePrefab);
-                particleObject.transform.position = position;
+                GameObject particleObject = Instantiate(particlePrefab, position, Quaternion.identity, clothRootTransform);
+                particleObject.name = $"Particle{i}_{j}";
                 Particle particle = particleObject.GetComponent<Particle>();
-                particle.Initialize(position);
-                particles.Add(particle);
+
+                bool isPinned = (j == height - 1 && (i == 0 || i == width - 1));
+                particle.Initialize(position, isPinned);
+
+                particleGrid[i, j] = particle;
             }
         }
+    }
+
+    private void CreateSpring(Particle a, Particle b)
+    {
+        GameObject springObject = new GameObject("Spring_" + a.name + "_" + b.name);
+        springObject.transform.parent = this.transform;
+
+        Spring spring = springObject.AddComponent<Spring>();
+        spring.Initialize(a, b);
+        structuralSprings.Add(spring);
     }
 
     public void CreateStructuralConstraints()
@@ -35,20 +51,16 @@ public class ClothSimulator : MonoBehaviour
         {
             for (int j = 0; j < height; j++)
             {
+                Particle current = particleGrid[i, j];
                 if (i <  width - 1)
                 {
-                    structuralSprings.Add(new Spring(GetParticle(i, j), GetParticle(i + 1, j)));
+                    CreateSpring(current, particleGrid[i + 1, j]);
                 }
                 if (j < height - 1)
                 {
-                    structuralSprings.Add(new Spring(GetParticle(i, j), GetParticle(i, j + 1)));
+                    CreateSpring(current, particleGrid[i, j + 1]);
                 }
             }
         }
-    }
-
-    Particle GetParticle(int xPosition, int yPosition)
-    {
-        return particles[xPosition + yPosition * height];
     }
 }
