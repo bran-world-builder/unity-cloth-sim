@@ -8,6 +8,7 @@ public class Particle : MonoBehaviour
     
     public Vector3 currentPosition;
     public Vector3 previousPosition;
+    public float dampingFactor = 0.5f;
     public bool isPinned;
 
     private Vector3 velocity;
@@ -32,9 +33,12 @@ public class Particle : MonoBehaviour
         if (isPinned) return;
 
         velocity = currentPosition - previousPosition;
+        velocity *= dampingFactor;
         newPosition = currentPosition + velocity + acceleration * Time.deltaTime * Time.deltaTime;
         previousPosition = currentPosition;
         currentPosition = newPosition;
+
+        ResetAcceleration();
     }
 
     public void ApplyForce(Vector3 force)
@@ -45,6 +49,17 @@ public class Particle : MonoBehaviour
     public void ResetAcceleration()
     {
         acceleration = Vector3.zero;
+    }
+
+    public void EnforceGroundHeight(float groundHeight)
+    {
+        if (currentPosition.y < groundHeight)
+        {
+            currentPosition.y = groundHeight;
+
+            velocity *= dampingFactor;
+            previousPosition.y = currentPosition.y;
+        }
     }
 
     private void OnDrawGizmos()
