@@ -4,12 +4,11 @@ This is a custom cloth simulation built in Unity as part of my technical portfol
 
 ---
 
-## 📌 Project Overview
+ ## 📌 Project Overview
 
-- **Engine**: Unity (C#)
-- **Status**: In Progress
-- **Goal**: A performant, modular cloth simulation system that can be used for in-game capes, flags, or environmental detail.
-- **Why**: To explore physics systems, optimization, and shader interaction in a custom implementation — and deepen my technical skill set in Unity.
+-This cloth simulation project was developed in Unity as a way to explore real-time physics-based animation through direct implementation. Rather than relying on Unity’s built-in cloth components, I built the system from the ground up to better understand the underlying math and structure used in real-time simulations.
+
+-The solver currently uses a simple **Verlet integration** model with a **spring-mass system**. The constraint formulation and iterative correction approach were inspired by **“Large Steps in Cloth Simulation”** by **David Baraff and Andrew Witkin** (SIGGRAPH 1998). My focus has been on achieving stable, believable motion at interactive framerates — particularly relevant in games.
 
 ---
 
@@ -28,9 +27,24 @@ This is a custom cloth simulation built in Unity as part of my technical portfol
 
 ## 🧠 Challenges & Learnings
 
-- Implementing constraint resolution without jitter
-- Balancing stiffness vs. simulation speed (frame rate impact)
-- Visual clarity: debugging invisible forces via gizmos and draw lines
+- Translating high-level research concepts (e.g., global vs. local constraints) into real-time Unity systems.
+- Managing stability without excessive constraint iterations — exploring stiffness vs. speed.
+- Debugging forces and constraints with minimal visual feedback.
+- Exploring ways to expand the system toward **semi-implicit** solvers or **GPU-based** evaluation based on further research.
+
+This project has deepened my appreciation for physically-based modeling and the trade-offs between performance, stability, and realism — particularly in interactive contexts like games.
+
+
+---
+
+## 📚 Research Grounding
+
+- This project references multiple papers and techniques from computer graphics research. Key concepts and inspirations include:
+  - **Baraff & Witkin (1998)** – Position-based constraint solving, step-size stability trade-offs, and efficient solvers for interactive cloth.
+  - **Provot (1995)** – Early position-based dynamics and distance constraint satisfaction.
+  - **Jakobsen (2001)** – Use of Verlet integration and constraint enforcement in simple game physics, popularized by *Hitman: Codename 47*.
+
+While this implementation does not yet fully replicate the more advanced implicit solvers or collision models described in those works, the goal has been to ground all development in real literature and build intuition from foundational principles.
 
 ---
 
