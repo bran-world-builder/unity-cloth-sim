@@ -21,9 +21,7 @@ This is a custom cloth simulation built in Unity as part of my technical portfol
 - [ ] Self-collision / object collision
 - [ ] GPU optimization / compute shader pass (planned)
 
-![100 Particles Hanging](Cloth%20Simulation/Assets/Images/100ParticlesHanging.png)
-
-![100 Particles Collapsed](Cloth%20Simulation/Assets/Images/100ParticlesCollapsed.png)
+![100 Particles Hanging](Cloth%20Simulation/Assets/Images/100ParticlesHanging.png) ![100 Particles Collapsed](Cloth%20Simulation/Assets/Images/100ParticlesCollapsed.png)
 
 ---
 
