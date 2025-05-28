@@ -1,5 +1,4 @@
-
-## 🧵 Unity Cloth Simulation – In Progress
+# 🧵 Unity Cloth Simulation – In Progress
 
 This is a custom cloth simulation built in Unity as part of my technical portfolio. The goal is to develop a system that reacts to forces (like wind and gravity), anchors, and collisions, using code-driven physics rather than relying solely on Unity’s built-in cloth component.
 
@@ -55,5 +54,3 @@ This is a custom cloth simulation built in Unity as part of my technical portfol
 ## 👋 About Me
 
 I'm a game developer with a CS background and a focus on systems design, shaders, and worldbuilding. This cloth sim is part of a broader technical portfolio showcasing my work in Unity and real-time interactivity.
-
-> For more, check out [my main portfolio](#) or the [farming game project](#).
