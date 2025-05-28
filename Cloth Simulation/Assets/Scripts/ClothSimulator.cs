@@ -11,11 +11,11 @@ public class ClothSimulator : MonoBehaviour
     public float gravityStrength = 9.81f;
     public float yOffset = 1.0f;
     [Range(0f, 1f)]
-    public float structuralStiffness = 0.2f;
+    public float structuralStiffness = 0.001f;
     [Range(0f, 1f)]
-    public float shearStiffness = 0.2f;
+    public float shearStiffness = 0.0005f;
     [Range(0f, 1f)]
-    public float bendStiffness = 0.05f;
+    public float bendStiffness = 0.0001f;
     public Transform clothRootTransform;
     public GameObject particlePrefab;
 
@@ -75,7 +75,7 @@ public class ClothSimulator : MonoBehaviour
             }
         }
         CreateStructuralConstraints();
-        CreateShearConstraints();
+        //CreateShearConstraints();
         CreateBendConstraints();
     }
 
