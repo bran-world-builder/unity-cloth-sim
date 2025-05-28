@@ -1,5 +1,6 @@
-using UnityEngine;
 using System.Collections.Generic;
+using UnityEngine;
+using static UnityEngine.ParticleSystem;
 
 public class ClothSimulator : MonoBehaviour
 {
@@ -13,7 +14,7 @@ public class ClothSimulator : MonoBehaviour
     [Range(0f, 1f)]
     public float structuralStiffness = 0.001f;
     [Range(0f, 1f)]
-    public float shearStiffness = 0.0005f;
+    public float shearStiffness = 0.00001f;
     [Range(0f, 1f)]
     public float bendStiffness = 0.0001f;
     public Transform clothRootTransform;
@@ -75,7 +76,7 @@ public class ClothSimulator : MonoBehaviour
             }
         }
         CreateStructuralConstraints();
-        //CreateShearConstraints();
+        CreateShearConstraints();
         CreateBendConstraints();
     }
 
@@ -194,11 +195,14 @@ public class ClothSimulator : MonoBehaviour
     void ApplyForces()
     {
         Vector3 gravity = new Vector3(0, -gravityStrength, 0);
+        Vector3 wind = new Vector3(0f, 0f, 0.5f);
+
         foreach (var particle in particleGrid)
         {
             if(!particle.isPinned)
             {
                 particle.ApplyForce(gravity);
+                particle.ApplyForce(wind);
             }
         }
     }
