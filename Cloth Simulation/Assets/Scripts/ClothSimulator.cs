@@ -1,37 +1,101 @@
 using System.Collections.Generic;
+using Unity.VisualScripting;
+using UnityEditor;
 using UnityEngine;
+using UnityEngine.UI;
 using static UnityEngine.ParticleSystem;
 
 public class ClothSimulator : MonoBehaviour
 {
-    public static int width = 10;
-    public static int height = 10;
-    public float spacing = 0.5f;
+    [Header("Global Sim Settings")]
     public int solverIterations = 15;
-    public float groundHeight = -0.5f;
+    public float groundHeight = -3f;
+    public GameObject groundPlane;
     public float gravityStrength = 9.81f;
     public float yOffset = 1.0f;
-    [Range(0f, 1f)]
-    public float structuralStiffness = 0.001f;
-    [Range(0f, 1f)]
-    public float shearStiffness = 0.00001f;
-    [Range(0f, 1f)]
-    public float bendStiffness = 0.0001f;
+    public float clickForceY = 100000f;
+    public float clickForceZ = 150000f;
+    public enum ForceMode { Force, Hit } // Force is Newtonian, Hit is PBD
+    public ForceMode forceMode = ForceMode.Force;
+
+    [Header("Spring Toggles")]
+    public bool structuralToggle = true;
+    public bool shearToggle = true;
+    public bool bendToggle = true;
+
+    [Header("Cloth Settings")]
+    public int width = 10;
+    public int height = 10;
+    public float spacing = 0.5f;
+    [Range(0.001f, 0.1f)]
+    public float structuralStiffness = 0.05f;
+    [Range(0f, 0.003f)]
+    public float shearStiffness = 0.00005f;
+    [Range(0f, 0.01f)]
+    public float bendStiffness = 0.005f;
     public Transform clothRootTransform;
     public GameObject particlePrefab;
+
+    [Header("Wind Settings")]
+    public Vector3 windDirection = new Vector3(1f, 0f, 0f);
+    public float windStrength = 0.5f;
+    public bool oscillateWind = false;
+    public float windOscillationSpeed = 1f;
+
+    [Header("Sliders")]
+    public Slider windStrengthSlider;
+    public Slider oscillationSpeedSlider;
+    public Slider forceYSlider;
+    public Slider forceZSlider;
+
+    [Header("Mesh Generation")]
+    public GameObject clothMeshObject;
+    private MeshFilter meshFilter;
+    private MeshRenderer meshRenderer;
+    private Mesh clothMesh;
+
+    private Vector3[] meshVertices;
+    private int[] meshTriangles;
+
 
     Particle[,] particleGrid;
     private List<Spring> structuralSprings = new List<Spring>();
     private List<Spring> shearSprings = new List<Spring>();
     private List<Spring> bendSprings = new List<Spring>();
 
+    private RaycastHit hit;
+
     public void Start()
     {
+        // Set listeners for updates in slider values
+        windStrengthSlider.onValueChanged.AddListener((value) =>
+        {
+            windStrength = value;
+        });
+
+        oscillationSpeedSlider.onValueChanged.AddListener((value) =>
+        {
+            windOscillationSpeed = value;
+        });
+        
+        forceYSlider.onValueChanged.AddListener((value) =>
+        {
+            clickForceY = value;
+        });
+        
+        forceZSlider.onValueChanged.AddListener((value) =>
+        {
+            clickForceZ = value;
+        });
+        
         BuildCloth();
+        GenerateClothMesh();
     }
 
     public void FixedUpdate()
     {
+        SetGroundPos();
+        
         // apply force
         ApplyForces();
 
@@ -51,11 +115,127 @@ public class ClothSimulator : MonoBehaviour
         {
             UnpinEverything();
         }
+
+        // Toggle wind
+        if (Input.GetKeyDown(KeyCode.W))
+        {
+            if (!oscillateWind)
+            {
+                oscillateWind = true;
+            }
+            else
+            {
+                oscillateWind = false;
+            }
+        }
+
+        // Change force mode
+        if (Input.GetKeyDown(KeyCode.M))
+        {
+            forceMode = forceMode == ForceMode.Force ? ForceMode.Hit : ForceMode.Force;
+            Debug.Log($"Force mode: " + forceMode);
+        }
+
+        // Call reset
+        if (Input.GetKeyDown(KeyCode.R))
+        {
+            ResetCloth();
+        }
+
+        // Toggle structural constraints with "1"
+        if (Input.GetKeyDown(KeyCode.Alpha1))
+        {
+            if (!structuralToggle)
+            {
+                structuralToggle = true;
+            }
+            else
+            {
+                structuralToggle = false;
+            }
+        }
+
+        // Toggle shear constraints with "2"
+        if (Input.GetKeyDown(KeyCode.Alpha2))
+        {
+            if (!shearToggle)
+            {
+                shearToggle = true;
+            }
+            else
+            {
+                shearToggle = false;
+            }
+        }
+
+        // Toggle bend constraints with "3"
+        if (Input.GetKeyDown(KeyCode.Alpha3))
+        {
+            if (!bendToggle)
+            {
+                bendToggle = true;
+            }
+            else
+            {
+                bendToggle = false;
+            }
+        }
+
+        // Apply force to single particle
+        if (Input.GetMouseButtonDown(0))
+        {
+            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+            int interactionMask = LayerMask.GetMask("ClothInteraction");
+
+            if (Physics.Raycast(ray,out hit))
+            {
+                Vector3 clickPoint = hit.point;
+                Particle closest = FindClosestParticle(clickPoint);
+                Debug.Log($"Ray hit at: {hit.point}");
+                Debug.Log($"Closest Particle: {closest.name}");
+                if (closest != null)
+                {
+                    Vector3 clickForce = new Vector3(0f, clickForceY, clickForceZ) * Time.fixedDeltaTime;
+                    
+                    if (forceMode == ForceMode.Force)
+                    {
+                        // Apply force to particle
+                        closest.ApplyForce(clickForce);
+                    }
+                    if (forceMode == ForceMode.Hit)
+                    {
+                        // Directly affect position, position based dynamics
+                        closest.currentPosition += new Vector3(0, 0.2f, 0.2f);
+                    }
+                }
+            }
+        }
+
+        // Apply force to particles in an area
+        if (Input.GetMouseButtonDown(1))
+        {
+            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+            int interactionMask = LayerMask.GetMask("ClothInteraction");
+
+            if (Physics.Raycast(ray, out hit))
+            {
+                Vector3 clickPoint = hit.point;
+                Debug.Log($"Ray hit at: {hit.point}");
+                ApplyForceInRadius(clickPoint, 1.5f, 5f);
+            }
+        }    
+    }
+
+    // Final call of updates before frame refresh
+    private void LateUpdate()
+    {
+        UpdateClothMesh();
     }
 
 
     #region Builders
 
+    // Programatically build cloth
     public void BuildCloth()
     {
         particleGrid = new Particle[width, height];
@@ -80,6 +260,7 @@ public class ClothSimulator : MonoBehaviour
         CreateBendConstraints();
     }
 
+    // create standard spring
     private void CreateSpring(Particle a, Particle b)
     {
         GameObject springObject = new GameObject("Spring_" + a.name + "_" + b.name);
@@ -91,6 +272,7 @@ public class ClothSimulator : MonoBehaviour
         structuralSprings.Add(spring);
     }
 
+    // check spring validity, then create spring if valid
     private void CreateSpringIfValid(int i1, int j1, int i2, int j2, List<Spring> springList, string type)
     {
         if (i2 >= 0 && i2 < width && j2 >= 0 && j2 < height)
@@ -115,6 +297,7 @@ public class ClothSimulator : MonoBehaviour
         }
     }
 
+    // Create structural, particle and up, down, left, right neighbors
     public void CreateStructuralConstraints()
     {
         for (int i = 0; i < width; i++)
@@ -134,6 +317,7 @@ public class ClothSimulator : MonoBehaviour
         }
     }
 
+    // Create shear constraints, particle and diagonal all neighbors
     public void CreateShearConstraints()
     {
         for (int i = 0; i < width; i++)
@@ -148,6 +332,7 @@ public class ClothSimulator : MonoBehaviour
         }
     }
 
+    // Create bend constraints, particle and particle + 2 neighbor in all directions
     public void CreateBendConstraints()
     {
         for (int i = 0; i < width; i++)
@@ -162,8 +347,67 @@ public class ClothSimulator : MonoBehaviour
         }
     }
 
+    public void GenerateClothMesh()
+    {
+        meshFilter = clothMeshObject.GetComponent<MeshFilter>();
+        meshRenderer = clothMeshObject.GetComponent<MeshRenderer>();
+
+        clothMesh = new Mesh();
+        clothMesh.name = "Cloth Mesh";
+
+        meshFilter.mesh = clothMesh;
+
+        int vertsPerRow = width;
+        int vertsPerColumn = height;
+        int vertexCount = vertsPerRow * vertsPerColumn;
+        int quadCount = (vertsPerRow - 1) * (vertsPerColumn - 1);
+        int triangleCount = quadCount * 2;
+
+        meshVertices = new Vector3[vertexCount];
+        meshTriangles = new int[triangleCount * 3];
+
+        // initial vertex positions
+        for (int j  = 0; j < height; j++)
+        {
+            for (int i = 0; i < width; i++)
+            {
+                int index = j * width + i;
+                meshVertices[index] = particleGrid[i, j].currentPosition;
+            }
+        }
+
+        // create triangles
+        int t = 0;
+        for (int j = 0; j < height - 1; j++)
+        {
+            for (int i = 0; i < width - 1; i++)
+            {
+                int topLeft = j * width + i;
+                int topRight = topLeft + 1;
+                int bottomLeft = topLeft + width;
+                int bottomRight = bottomLeft + 1;
+
+                // first triangle
+                meshTriangles[t++] = topLeft;
+                meshTriangles[t++] = bottomLeft;
+                meshTriangles[t++] = topRight;
+
+                // second triangle
+                meshTriangles[t++] = topRight;
+                meshTriangles[t++] = bottomLeft;
+                meshTriangles[t++] = bottomRight;
+            }
+        }
+
+        clothMesh.vertices = meshVertices;
+        clothMesh.triangles = meshTriangles;
+        clothMesh.RecalculateNormals();
+    }
+
     #endregion
     #region Gizmos
+
+    // draw Gizmos for testing
     private void OnDrawGizmos()
     {
         if (Application.isPlaying)
@@ -185,6 +429,9 @@ public class ClothSimulator : MonoBehaviour
             {
                 Gizmos.DrawLine(spring.particle1.currentPosition, spring.particle2.currentPosition);
             }
+
+            Gizmos.color = Color.red;
+            Gizmos.DrawSphere(hit.point, 0.1f);
         }
     }
 
@@ -195,7 +442,13 @@ public class ClothSimulator : MonoBehaviour
     void ApplyForces()
     {
         Vector3 gravity = new Vector3(0, -gravityStrength, 0);
-        Vector3 wind = new Vector3(0f, 0f, 0.5f);
+        Vector3 wind = windDirection.normalized * windStrength;
+
+        if (oscillateWind)
+        {
+            float t = Mathf.Sin(Time.time * windOscillationSpeed);
+            wind *= t;
+        }
 
         foreach (var particle in particleGrid)
         {
@@ -225,19 +478,28 @@ public class ClothSimulator : MonoBehaviour
     {
         for (int i = 0; i < solverIterations; i++)
         {
-            foreach (var spring in structuralSprings)
+            if (structuralToggle)
             {
-                spring.ApplyConstraint();
+                foreach (var spring in structuralSprings)
+                {
+                    spring.ApplyConstraint();
+                }
             }
-
-            foreach (var spring in shearSprings)
+            
+            if (shearToggle)
             {
-                spring.ApplyConstraint();
+                foreach (var spring in shearSprings)
+                {
+                    spring.ApplyConstraint();
+                }
             }
-
-            foreach (var spring in bendSprings)
-            {
-                spring.ApplyConstraint();
+            
+            if (bendToggle)
+            { 
+                foreach (var spring in bendSprings)
+                {
+                    spring.ApplyConstraint();
+                }
             }
         }
     }
@@ -260,11 +522,119 @@ public class ClothSimulator : MonoBehaviour
         }
     }
 
+    // Drop the cloth
     void UnpinEverything()
     {
         foreach (var particle in particleGrid)
         {
             particle.isPinned = false;
+        }
+    }
+
+    // Update ground position based on sim parameters
+    void SetGroundPos()
+    {
+        Vector3 currentGroundPos = groundPlane.transform.position;
+        currentGroundPos.y = groundHeight;
+        groundPlane.transform.position = currentGroundPos;
+    }
+
+    // Find closest particle to apply force to
+    private Particle FindClosestParticle(Vector3 point)
+    {
+        Particle closest = null;
+        float closestDistance = float.MaxValue;
+
+        foreach (var particle in particleGrid)
+        {
+            float dist = Vector3.Distance(particle.currentPosition, point);
+            if (dist < closestDistance)
+            {
+                closestDistance = dist;
+                closest = particle;
+            }
+        }
+
+        return closest;
+    }
+
+    // Apply force over a group of particles
+    private void ApplyForceInRadius(Vector3 center, float radius, float maxForce)
+    {
+        foreach (var particle in particleGrid)
+        {
+            float dist = Vector3.Distance(particle.currentPosition, center);
+            if (dist < radius)
+            {
+                Vector3 forceDirection = new Vector3(0f, clickForceY, clickForceZ) * Time.fixedDeltaTime;
+                float strength = Mathf.Lerp(maxForce, 0, dist/ radius);
+                particle.ApplyForce(forceDirection * strength);
+            }
+        }
+    }
+
+    // Reset the simulation
+    public void ResetCloth()
+    {
+        for (int i = 0; i < width; i++)
+        {
+            for (int j = 0; j < height; j++)
+            {
+                Particle particle = particleGrid[i, j];
+                Vector3 startPos = new Vector3(i * spacing, j * spacing + yOffset, 0);
+                particle.currentPosition = startPos;
+                particle.previousPosition = startPos;
+                particle.ResetAcceleration();
+                particle.isPinned = (j == height - 1 && (i == 0 || i == width -1));
+            }
+        }
+    }
+
+    // Update cloth mesh to match particle movements
+    private void UpdateClothMesh()
+    {
+        for (int j = 0; j < height; j++)
+        {
+            for (int i = 0; i < width; i++)
+            {
+                int index = j * width + i;
+                meshVertices[index] = particleGrid[i, j].currentPosition;
+            }
+        }
+
+        clothMesh.vertices = meshVertices;
+        clothMesh.RecalculateNormals();
+        clothMesh.RecalculateBounds();
+    }
+
+    #endregion
+
+    #region UI Functionality
+
+    public void DropClothUI()
+    {
+        UnpinEverything();
+    }
+
+    public void ResetClothUI()
+    {
+        ResetCloth();
+    }
+
+    public void InteractionModeUI()
+    {
+        forceMode = forceMode == ForceMode.Force ? ForceMode.Hit : ForceMode.Force;
+    }
+
+    public void WindOscillationUI()
+    {
+        if (!oscillateWind)
+        {
+            oscillateWind = true;
+        }
+        else
+        {
+            oscillateWind = false;
         }
     }
 
