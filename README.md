@@ -1,6 +1,6 @@
-# 🧵 Unity Cloth Simulation – In Progress
+# 🧵 Unity Cloth Simulation – Complete
 
-This is a custom cloth simulation built in Unity as part of my technical portfolio. The goal is to develop a system that reacts to forces (like wind and gravity), anchors, and collisions, using code-driven physics rather than relying solely on Unity’s built-in cloth component.
+This is a custom cloth simulation built in Unity as part of my technical portfolio. The goal was to develop a system that reacts to forces (like wind and gravity), anchors, and collisions, using code-driven physics rather than relying solely on Unity’s built-in cloth component.
 
 ---
 
@@ -10,6 +10,8 @@ This is a custom cloth simulation built in Unity as part of my technical portfol
 
 -The solver currently uses a simple **Verlet integration** model with a **spring-mass system**. The constraint formulation and iterative correction approach were inspired by **“Large Steps in Cloth Simulation”** by **David Baraff and Andrew Witkin** (SIGGRAPH 1998). My focus has been on achieving stable, believable motion at interactive framerates — particularly relevant in games.
 
+*Pictures to come.*
+
 ---
 
 ## ✅ Current Progress
@@ -18,8 +20,8 @@ This is a custom cloth simulation built in Unity as part of my technical portfol
 - [x] Structural spring constraints between particles
 - [x] Gravity and wind force integration
 - [x] Simple anchor support (e.g. pinning corners)
-- [ ] Self-collision / object collision
-- [ ] GPU optimization / compute shader pass (planned)
+- [ ] ~~Self-collision / object collision~~
+- [x] GPU optimization / compute shader pass (planned)
 
 ![100 Particles Hanging](Cloth%20Simulation/Assets/Images/100ParticlesHanging.png) ![100 Particles Collapsed](Cloth%20Simulation/Assets/Images/100ParticlesCollapsed.png)
 
@@ -48,15 +50,6 @@ While this implementation does not yet fully replicate the more advanced implici
 
 ---
 
-## 🔜 Next Steps
-
-- Add support for mesh skinning (connect simulation to visual mesh)
-- Integrate with Unity colliders for environment interaction
-- Polish visual output for portfolio presentation
-- Optional: Explore GPU-based simulation with compute shaders for large-scale cloth
-
----
-
 ## 📎 Related Skills Demonstrated
 
 - C# physics implementation
@@ -65,6 +58,21 @@ While this implementation does not yet fully replicate the more advanced implici
 
 ---
 
+## 🔭 Looking Ahead
+
+This cloth simulation project laid the groundwork for a larger physics systems initiative. The next major goal is to develop a modular, editor-friendly **Position Based Dynamics (PBD) add-on** for Unity, eventually evolving into an **Extended Position Based Dynamics (XPBD)** framework.
+
+Planned features for the next phase:
+- ✔️ Attach-to-object architecture (drag & drop component)
+- ✔️ Constraint-based physics modeling using XPBD principles
+- ✔️ Visual editor tools for tuning stiffness, damping, and compliance
+- ✔️ Real-time debugging and constraint visualization
+- ✔️ Applicable to both cloth and soft-bodies
+
+This will serve as both a teaching tool and a technical foundation for future game and simulation projects.
+
+---
+
 ## 👋 About Me
 
-I'm a game developer with a CS background and a focus on systems design, shaders, and worldbuilding. This cloth sim is part of a broader technical portfolio showcasing my work in Unity and real-time interactivity.
+I'm a game developer with a CS background and a focus on systems design, shaders, physics, and worldbuilding. This cloth sim is part of a broader technical portfolio showcasing my work in Unity and real-time interactivity.
